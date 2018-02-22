@@ -1,4 +1,3 @@
-
 pragma solidity ^0.4.18;
 
 
@@ -16,14 +15,24 @@ contract erc20 {
 
 
 contract  torioux is erc20 {
-    string public name="Torioux";
+    
+    address private owner;
+    string public name="ToriouxCoin";
     string public symbol="trx";
-    uint public _totalSupply =4500;
-    uint public decimal=10;
+    uint public totalSupply =45000000000000;
+    uint public decimals=10;
+    
     mapping (address=>uint) balance;
     mapping(address=>bool) registrados;
+    mapping(address=>mapping(address=>uint)) _allowances;
+    
+    function torioux()public {
+        balance[msg.sender]=totalSupply;
+        owner=msg.sender;
+    }
+    
     function totalSupply()public view returns(uint){
-         return _totalSupply;
+         return totalSupply;
     }
     
     function balanceOf(address _owner)public constant returns (uint256){
@@ -31,9 +40,10 @@ contract  torioux is erc20 {
     }
     function transfer(address _to, uint256 _value)public returns (bool){
     
-       require(_value>0);
+    //   require(_value>0);
+        balance[msg.sender]-=_value;
         balance[_to]+=_value;
-        _totalSupply-=_value;
+        totalSupply-=_value;
        
         return true;
     }
@@ -53,9 +63,14 @@ contract  torioux is erc20 {
     
     function approve(address _spender, uint256 _value)public returns (bool success){
         
-        
+        _allowances[msg.sender][_spender] = _allowances[msg.sender][_spender];
+        Approval(msg.sender, _spender, _value);
+      
         
         return true;
+    }
+    function allowance(address _owner, address _spender)public  constant returns (uint256 remaining){
+          return _allowances[_owner][_spender];
     }
     
 }

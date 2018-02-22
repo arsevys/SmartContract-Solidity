@@ -12,7 +12,7 @@ contract IcoTorioux {
     uint banco= 0;
     
     uint trx=80000000000000000; //precio en weit 
-    
+    uint trxBonus=30000000000000000;
     /*
     1 trx=0.08 ether
      */
@@ -24,17 +24,18 @@ contract IcoTorioux {
     
     function mostrarHora() public  view returns(uint e){
        e= p.getHora();
-       e =78;
-    
-        
-        
     }
     
     function buy()payable public  {
       if(now<lanzamiento+hora){
-        uint   count=msg.value/trx;
+        uint   count=msg.value/trxBonus;
           
             t.transfer(msg.sender,count); 
+            
+      }
+      else if(now<lanzamiento*(5*hora)){
+          uint  counvt=msg.value/trxBonus;
+            t.transfer(msg.sender,counvt); 
       }
     
         
