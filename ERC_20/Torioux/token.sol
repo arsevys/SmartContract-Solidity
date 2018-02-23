@@ -68,7 +68,7 @@ contract ERC20Token is ERC20Interface {
    mapping(address => mapping (address => uint256)) allowed;
 
 
-   function ERC20Token(string _name, string _symbol, uint8 _decimals, uint256 _totalSupply, address _initialTokenHolder) public {
+ function ERC20Token(string _name, string _symbol, uint8 _decimals, uint256 _totalSupply, address _initialTokenHolder) public {
          names = _name;
          symbols = _symbol;
          decimalss = _decimals;
@@ -96,12 +96,12 @@ contract ERC20Token is ERC20Interface {
          return decimalss;
       }
 
-    //Devuelve la cantidad de token
+       //Devuelve la cantidad de token
       function TotalSupply() public view returns (uint256) {
          return totalSupplys;
       }
 
-    //Devuelve la cantidad de token por cuenta
+      //Devuelve la cantidad de token por cuenta
       function balanceOf(address _owner) public view returns (uint256 balance) {
          return balances[_owner];
       }
@@ -113,11 +113,12 @@ contract ERC20Token is ERC20Interface {
 
 
       function transfer(address _to, uint256 _value) public returns (bool success) {
+          
+          
          balances[msg.sender] = balances[msg.sender].restar(_value);
          balances[_to] = balances[_to].sumar(_value);
-
          Transfer(msg.sender, _to, _value);
-
+        
          return true;
       }
 
@@ -158,8 +159,8 @@ contract ToriouxTokenConfig {
     string public constant name="Toriouxr";
     uint8  public constant  decimals= 5;
     uint256 public constant factorDecimal  = 10**uint256(decimals);
-    uint256 public constant totalSupply = 150000 * factorDecimal;
-    
+    uint256 public constant totalSupply = 1500000 * factorDecimal;
+    uint256 public constant trx=0.5 ether;
 }
 
 
@@ -185,6 +186,8 @@ contract Finalizar is owner {
     }
     
 }
+
+
 
 
 
@@ -242,30 +245,149 @@ contract ToriouxToken is ToriouxTokenConfig,FinalizarToken{
    }
 }
 
-/*
-contract ToriouxTokenSaleConfig is ToriouxTokenConfig {
 
-    //
-    // Tiempo
-    //
-    uint256 public constant INITIAL_STARTTIME      = 1516240800; // 2018-01-18, 02:00:00 UTC
-    uint256 public constant INITIAL_ENDTIME        = 1517536800; // 2018-02-02, 02:00:00 UTC
-    uint256 public constant INITIAL_STAGE          = 1;
+// ------------------------------------------------ ----------------------------
+// Token Torioux - Venta de Token Torioux - Configuracion
+//
+// Copyright (c) 2018 TORIOUX GROUP
+// ------------------------------------------------ ----------------------------
 
 
-    //
-    // Purchases
-    //
+contract ToriouxTokenSaleConfig is ToriouxTokenConfig{
+    
+    //tiempo inicial cuando se empieza l ico 
+    uint256 public constant INICIO_start=1516240800;
 
-    // Minimum amount of ETH that can be used for purchase.
-    uint256 public constant CONTRIBUTION_MIN      = 0.1 ether;
 
-    // Price of tokens, based on the 1 ETH = 1700 BLZ conversion ratio.
-    uint256 public constant TOKENS_PER_KETHER     = 1700000;
+    //tiempo de finalizacion de las ico 
+    uint256 public constant INICIO_terminar=1586240800;
+    
+    //etapa inicial
+    uint256 public constant ETAPA_inicial=1;
+    
+    //COMPRAS 
+    
+    //cantidad minima de ethereum que se puede usar para comprar
+    uint256 public constant CONTRIBUCION_minima = 0.5 ether;
+    
+    
+   // Cantidad máxima de tokens que se pueden comprar para cada cuenta.
+   uint256 public constant TOKENS_CUENTA_MAXIMO    = 12000 * factorDecimal;
 
-    // Amount of bonus applied to the sale. 2000 = 20.00% bonus, 750 = 7.50% bonus, 0 = no bonus.
-    uint256 public constant BONUS                 = 0;
+    
+    
+}
 
-    // Maximum amount of tokens that can be purchased for each account.
-    uint256 public constant TOKENS_ACCOUNT_MAX    = 17000 * DECIMALSFACTOR;
-}*/
+
+
+
+// ------------------------------------------------ ----------------------------
+// Token Torioux - Venta de Token Torioux - Configuracion
+//
+// Copyright (c) 2018 TORIOUX GROUP
+// ------------------------------------------------ ----------------------------
+
+contract FlexibleTokenSale is ToriouxTokenSaleConfig ,Finalizar{
+      using Math for uint256;
+
+//
+// ciclo de vida de la venta de token 
+//
+
+   uint256 public tiempoInicio;
+   uint256 public tiempoFinal;
+    /* EL owner puede suspender la venta de token hazta que lo active*/
+   bool public suspendido;
+  
+  
+  // Wallet - Billetera donde se alamacenara los ether enviados por los usuario
+  address public walletAddress;
+  
+  //token
+  FinalizarToken public token;
+  //cantidad 
+  
+  //llevar control de los tokens vendido
+  uint256 public totalTokensVendido;
+   
+  //llevar control de ether recolectado
+  uint256 public totalEtherRecolectado;
+  
+  
+ function FlexibleTokenSale
+ (uint256 _startTime, uint256 _endTime, address _walletAddress) public
+ {
+        //tiempo de inicio debe ser menor que el tiempo Final
+        require(_endTime>_startTime);
+        // validar que el address nosea igual al del owner o contrato
+        require(_walletAddress != address(0));
+        require(_walletAddress != address(this));
+        //ingresamos el address donde se almacenara el ether
+        walletAddress=_walletAddress;
+        finalizado = false;
+        suspendido= false;
+   
+    }
+
+
+
+
+       // Permite al propietario suspender la venta - 
+      function suspender() external onlyOwner returns(bool) {
+            if (suspendido == true) {
+                return false;
+            }
+
+            suspendido = true;
+
+            return true;
+         }
+
+
+
+       // Permite al propietario reanudar la venta.    
+      function resume() external onlyOwner returns(bool){
+            if (suspendido == false) {
+                return false;
+            }
+            suspendido = false;
+
+            return true;
+      }    
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      /*
+         function () payable public {
+            buyTokens(msg.sender);
+         }
+     */
+     // Inicializar debe ser llamado por el propietario como parte de la fase de despliegue + instalación.
+     // Asociará el contrato de venta con el contrato de token y realizará controles básicos. 
+      
+       function Inicializar(FinalizarToken _token) external onlyOwner returns(bool) {
+            require(address(token) == address(0));
+            require(address(_token) != address(0));
+            require(address(_token) != address(this));
+            require(address(_token) != address(walletAddress));
+            token = _token;
+            return true;
+         }
+         
+       function comprarToken (address beneficiario )payable public  {
+           require(!suspendido);
+           uint256 cantidad=msg.value;
+           uint256 tokens=cantidad.calcularPromedio(trx);
+           token.transfer(beneficiario,tokens);
+           walletAddress.transfer(msg.value);
+       }
+
+
+}
